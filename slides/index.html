@@ -112,7 +112,7 @@ r.colors map=asp_2m color=aspect
 # Параметры настройки: tension и smooth
 Метод сплайнов моделирует поведение гибкой растяжимой пластины, которая закрепляется между точками. 
 
-* tension (растяжение) параметр моделирует степень растяжения пластины в диапазоне от жесткой пластины до эластичной мембраны. Чем меньше
+* tension (эластичность) параметр моделирует степень растяжения пластины в диапазоне от жесткой пластины до эластичной мембраны. Чем меньше
 значение параметра, тем тверже считается пластина, соответственно на выходе получаются малорельефные, "плоские" поверхности. 
 Соответственно в местах резкого изменения высот низкие значения параметра излишне сглаживают рельеф. Высокие значения параметра
 приводят к созданию эластичной резиновой мембраны, и в результате каждая точка "вытягивает" эту мембрану в свою сторону и вокруг точек появляются 
@@ -153,7 +153,7 @@ v.edit map=elevation tool=delete where="part=10"
 
 2. Строим рельеф и считываем с него данные
 ```bash
-v.surf.rst elev_points elev=elev_2m zcol=value smooth=10 tension=0.1 --o
+v.surf.rst input=elev_points elev=elev_2m zcol=value smooth=10 tension=0.1 --o
 v.what.rast map=test raster=elev_2m column=elev
 ```
 
@@ -162,6 +162,57 @@ v.what.rast map=test raster=elev_2m column=elev
 v.db.update map=test column=error query_column="value - elev"
 v.univar map=test column=error
 ```
+
+---
+# Скрипт: часть 1
+Последовательность построения рельефа и расчет погрешности оформим в виде функции на Python:
+
+```python
+import uuid		# Для генерирования уникальных имен карт
+
+def get_error(input_map, zcol, test_map, smooth, tension):
+    output_map = uuid.uuid4().hex 
+    grass.run_command('v.surf.rst', input=input_map, elev=output_map, 
+    zcol=zcol, smooth=smooth, tension=tension, overwrite=True)
+    grass.run_command('v.what.rast', map=test_map, raster=output_map, column='elev')
+    grass.run_command('v.db.update', map=test_map, column='error', 
+    query_column="value - elev")
+    # Удалим временную карту высот
+    grass.run_command('g.remove', type='raster', name=output_map)
+
+    result = grass.parse_command('v.univar', map=test_map, 
+                                 column='error', flags='g')
+    return result
+```
+
+---
+# Скрипт: часть 1
+
+В консоли Python выполним:
+```python
+import uuid
+
+smooth = 10.0
+tension = 0.1
+input_map = 'elev_points'
+test_map = 'test'
+
+get_error(input_map, 'value', test_map, smooth, tension)
+```
+
+В результате получим:
+```python
+{
+...
+'min': '-8.63614', 
+'max': '4.13537', 
+'sum': '-97.4503', 
+'range': '12.7715', 
+'n': '600', 
+'mean_abs': '1.26071', 
+'mean': '-0.162417'}
+```
+
 
     </textarea>
 	<script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
