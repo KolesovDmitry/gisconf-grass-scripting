@@ -86,14 +86,32 @@ class: center, middle
 3. Окно карты.
 
 ---
+# Задача интерполяции рельефа по точкам с известной высотой
 
+* Есть набор точек, в которых были произведены какие-либо измерения (например, высоты).
+* Требуется, основываясь на отдельных измерениях, построить растр высот, то есть поверхность, покрывающую всю рассматриваемую территорию.
+
+### Точность. Мы воспользуемся процедурой перекрестной проверки.
+
+
+1. "Спрячем" часть точек от процедуры построения рельефа: удалим точки из исходной карты (поместим их во вспомогательную карту).
+2. Выберем модуль, который будем использовать для интерполяции. Выберем некоторые начальные настройки этого модуля.
+3. Построим рельеф на базе оставшихся точек.
+4. Найдем погрешность в тех точках, которые были удалены из исходных данных (не использовались в построении рельефа).
+
+В итоге, повторяя процедуру для разных параметров мы будем получать разные погрешности нашего рельефа. 
+Тот набор параметров, который обеспечивает наименьшую погрешность в "незнакомых" точках мы и будем использовать
+как оптимальный.
+
+
+---
 # Интерполяция сплайнами 
 
 Метод сплайнов (модуль v.surf.rst, Regularized Spline with Tension) моделирует поведение гибкой растяжимой пластины, которая закрепляется между точками. 
 
 ```bash
 v.surf.rst -c input=name [zcolumn=name] elevation=name aspect=name where=sql_query \
-	tension=float smooth=float 
+    tension=float smooth=float 
 ```
 Параметры:
 * input=name название входной векторной карты с высотами;
@@ -121,21 +139,6 @@ r.colors map=asp_2m color=aspect
 параметра, тем "мягче" пружина и тем большее допустимое отклонение пластины от точек. Чем меньше параметр, тем сильнее пружина, и при нулевом значении 
 параметра пластина пройдет точно через точку. (GRASS позволяет задать каждой точке свое значение smooth)
 
-
----
-# Точность построений
-
-Будем оценивать точность построений на базе поцедуры перекрестной проверки:
-
-1. "Спрячем" часть точек от процедуры построения рельефа: удалим точки из исходной карты (поместим их во вспомогательную карту).
-2. Выберем параметры tension и smooth.
-3. Построим рельеф на базе оставшихся точек.
-4. Найдем погрешность для тех точек, которые были удалены из исходных данных.
-5. Выберем новые параметры tension и smooth и повторим процедуру.
-
-В итоге, повторяя процедуру для разных параметров мы будем получать разные погрешности нашего рельефа. 
-Тот набор параметров, который обеспечивает наименьшую погрешность в "незнакомых" точках мы и будем использовать
-как оптимальный.
 
 **Замечание** Процедура перекрестной проверки уже встроена в модуль, но мы воспроизведём ее в учебных целях.
 
@@ -168,17 +171,18 @@ v.univar map=test column=error
 Последовательность построения рельефа и расчет погрешности оформим в виде функции на Python:
 
 ```python
-import uuid		# Для генерирования уникальных имен карт
+import uuid     # Для генерирования уникальных имен карт
 
 def get_error(input_map, zcol, test_map, smooth, tension):
     output_map = uuid.uuid4().hex 
     grass.run_command('v.surf.rst', input=input_map, elev=output_map, 
-    zcol=zcol, smooth=smooth, tension=tension, overwrite=True)
+        zcol=zcol, smooth=smooth, tension=tension, 
+        segmax=30, npmin=140, overwrite=True)
     grass.run_command('v.what.rast', map=test_map, raster=output_map, column='elev')
     grass.run_command('v.db.update', map=test_map, column='error', 
     query_column="value - elev")
     # Удалим временную карту высот
-    grass.run_command('g.remove', type='raster', name=output_map)
+    grass.run_command('g.remove', type='raster', name=output_map, flags='f')
 
     result = grass.parse_command('v.univar', map=test_map, 
                                  column='error', flags='g')
@@ -208,14 +212,58 @@ get_error(input_map, 'value', test_map, smooth, tension)
 'max': '4.13537', 
 'sum': '-97.4503', 
 'range': '12.7715', 
-'n': '600', 
 'mean_abs': '1.26071', 
-'mean': '-0.162417'}
+'mean': '-0.162417'
+}
+```
+
+---
+# Скрипт: часть 1
+Создадим функцию, которая находит оптимальный набор параметров. Она будет получать на вход
+шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию ```get_error```.
+
+```python
+def optimize(input_map, zcol, test_map, smooth_step, 
+        tension_step, smooth_max=100, tension_max=200):
+    optim = 10000000    # 
+    tens = sm = None
+    for s in range(0, smooth_max, smooth_step):
+        for t in range(0, tension_max, tension_step):
+            err = get_error(input_map, zcol, test_map, s, t)
+            err = float(err['mean_abs'])
+            if optim > err:
+                optim = err
+                tens = t
+                sm = s
+    return sm, tens
+```
+
+Выполним в консоли Python:
+
+```python
+optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
+
+(80, 180)
 ```
 
 
+---
+# Собираем все вместе в командный файл:
+
+
+[Командный файл]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py)
+
+Запускаем скрипт в Command Console:
+
+```bash
+python script1.py
+```
+
+---
+
+
     </textarea>
-	<script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
     </script>
     <script type="text/javascript">
       var slideshow = remark.create();
@@ -225,13 +273,6 @@ get_error(input_map, 'value', test_map, smooth, tension)
           skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
           }
       });
-      MathJax.Hub.Queue(function() {
-          $(MathJax.Hub.getAllJax()).map(function(index, elem) {
-              return(elem.SourceElement());
-          }).parent().addClass('has-jax');
-      });
-
-      MathJax.Hub.Configured();
     </script>
   </body>
 </html>
