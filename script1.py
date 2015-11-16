@@ -14,7 +14,7 @@ def get_error(input_map, zcol, test_map, smooth, tension):
     grass.run_command('v.db.update', map=test_map, column='error',
     query_column="value - elev")
     # Удалим временную карту высот
-    grass.run_command('g.remove', type='raster', name=output_map)
+    grass.run_command('g.remove', type='raster', name=output_map, flags='f')
 
     result = grass.parse_command('v.univar', map=test_map,
                                  column='error', flags='g')
@@ -36,6 +36,8 @@ def optimize(input_map, zcol, test_map, smooth_step,
 
 if __name__ == "__main__":
     input_map = 'elev_points'
+    output_map = 'elev_2m'
+    zcol = 'value'
     test_map = 'test'
 
     smooth, tension = optimize(input_map, 'value',
