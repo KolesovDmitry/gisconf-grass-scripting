@@ -291,21 +291,24 @@ get_error(input_map, 'value', test_map, smooth, tension)
 ---
 # Скрипт: часть 1
 Создадим функцию, которая находит оптимальный набор параметров. Она будет получать на вход
-шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию ```get_error```.
+шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию get_error.
 
 ```python
-def optimize(input_map, zcol, test_map, smooth_step, 
-        tension_step, smooth_max=100, tension_max=200):
-    optim = 10000000    # 
+def optimize(input_map, zcol, test_map, smooth_step,
+            tension_step, smooth_max=100, tension_max=200):
+    opt = 10000000  # Большое число
     tens = sm = None
-    for s in range(0, smooth_max, smooth_step):
-        for t in range(0, tension_max, tension_step):
+    s = t = 0
+    while s< smooth_max:
+        while t < tension_max:
             err = get_error(input_map, zcol, test_map, s, t)
             err = float(err['mean_abs'])
-            if optim > err:
-                optim = err
+            if err < opt:
+                opt = err
                 tens = t
                 sm = s
+            t = t + tension_step
+        s = s + smooth_step
     return sm, tens
 ```
 
@@ -314,7 +317,6 @@ def optimize(input_map, zcol, test_map, smooth_step,
 ```python
 optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
 
-(80, 180)
 ```
 
 
@@ -330,7 +332,12 @@ python script1.py
 
 ---
 
+[Скрипт script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py)
 
+```bash
+script2.py input=elevation output=elev_2m test_map=test \
+	zcolumn=value smooth_step=20 tension_step=20 smooth_max=100 tension_max=200
+```
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
     </script>

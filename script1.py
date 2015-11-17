@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import grass.script as grass
@@ -22,17 +22,21 @@ def get_error(input_map, zcol, test_map, smooth, tension):
 
 def optimize(input_map, zcol, test_map, smooth_step,
             tension_step, smooth_max=100, tension_max=200):
-    opt = 10000000  #
+    opt = 10000000  # Большое число
     tens = sm = None
-    for s in range(0, smooth_max, smooth_step):
-        for t in range(0, tension_max, tension_step):
+    s = t = 0
+    while s< smooth_max:
+        while t < tension_max:
             err = get_error(input_map, zcol, test_map, s, t)
             err = float(err['mean_abs'])
             if err < opt:
                 opt = err
                 tens = t
                 sm = s
+            t = t + tension_step
+        s = s + smooth_step
     return sm, tens
+
 
 if __name__ == "__main__":
     input_map = 'elev_points'
@@ -40,7 +44,7 @@ if __name__ == "__main__":
     zcol = 'value'
     test_map = 'test'
 
-    smooth, tension = optimize(input_map, 'value',
+    smooth, tension = optimize(input_map, zcol,
                                test_map, smooth_step=20, tension_step=30)
     print smooth, tension
     grass.run_command('v.surf.rst', input=input_map, elev=output_map,
