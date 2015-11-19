@@ -51,7 +51,10 @@
       }
 
     </style>
-    <script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <!-- <script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script> -->
+
+	<script src="./MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
   </head>
   <body>
     <textarea id="source">
@@ -362,14 +365,7 @@ g.region vector=elev_points res=2
 v.surf.rst elev_points elev=elev_2m zcol=value 
 ```
 
----
-# Посмотрим на исходные данные и на результаты
-
-* Добавим растр с рельефом — *"elev_2m"*
-
-* Добавим слой наших исходных точек — *"elev_points"*
-
-.center[<img src="img/dem_display.png" width=800  />]
+В списке слоёв и в окне карты должен появиться растровый слой *elev_2m@user1*.
 
 ---
 # Параметры настройки: tension и smooth
@@ -443,8 +439,6 @@ def get_error(input_map, zcol, test_map, smooth, tension):
 
 В консоли Python выполним:
 ```python
-import uuid
-
 smooth = 10.0
 tension = 0.1
 input_map = 'elev_points'
@@ -492,34 +486,39 @@ def optimize(input_map, zcol, test_map, smooth_step,
 
 Выполним в консоли Python:
 
-```python
+```python					 
 optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
-
 ```
 
 
----
-# Собираем все вместе в командный файл:
+---					 
+# Соберём всё вместе в единый скрипт:
 
-
-[Командный файл script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py)
+<!-- [Командный файл script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py) -->
 
 Запускаем скрипт в Command Console:
 
 python script1.py
 
 ---
-
+#
+					 
 [Скрипт script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py)
 
-```bash
-script2.py input=elevation output=elev_2m test_map=test \
-	zcolumn=value smooth_step=20 tension_step=20 smooth_max=100 tension_max=200
-```
+<!-- ```bash -->
+<!-- script2.py input=elevation output=elev_2m test_map=test \ -->
+<!-- 	zcolumn=value smooth_step=20 tension_step=20 smooth_max=100 tension_max=200 -->
+
+<!-- ``` -->
+
     </textarea>
-    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    <!-- <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js"> -->
+    <!-- </script> -->
+
+	<script src="./remark-latest.min.js">
     </script>
-    <script type="text/javascript">
+
+	<script type="text/javascript">
       var slideshow = remark.create();
       // Setup MathJax
       MathJax.Hub.Config({
