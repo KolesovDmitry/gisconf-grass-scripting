@@ -3,14 +3,17 @@
 
 import sys
 import os
+import shutil
 
-def main(mapset, altitude):
+def main(grassdata, location, mapset, altitude):
+    # Создаем временный Mapset
     grass.run_command('g.mapset', mapset=mapset, flags='c')
 
+    # Копируем туда файлыё
+    grass.run_command('g.copy', raster='elev_2m@user1,elev_2m')
     grass.run_command('g.region', raster='elev_2m')
-    grass.run_command('g.list', type='raster')
 
-
+    # Отмывка рельефа
     names = []
     for a in range(0, 360, 20):
         shaded = 'elev_sh_' + str(a)
@@ -19,8 +22,16 @@ def main(mapset, altitude):
         shaded_color = 'elev_sh_col_' + str(a)
         grass.run_command('r.shade', shade=shaded, color='elevation',
                           output=shaded_color, overwrite=True)
-
         names.append(shaded_color)
+
+    # Переходим в PERMANENT, копируем результаты расчетов
+    grass.run_command('g.mapset', mapset='PERMANENT', flags='c')
+    for name in names:
+        name_old = name + '@' + mapset
+        grass.run_command('g.copy', raster=name_old +',' + name)
+
+    # Удаляем временный MAPSET
+    shutil.rmtree(os.path.join(grassdata, location, mapset))
 
 if __name__ == "__main__":
     gisbase = sys.argv[1]
@@ -39,6 +50,6 @@ if __name__ == "__main__":
     import grass.script.setup as gsetup
 
     gsetup.init(gisbase, grassdata, location, 'PERMANENT')
-    main(mapset, altitude)
+    main(grassdata, location, mapset, altitude)
 
 

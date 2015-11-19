@@ -491,7 +491,7 @@ optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
 ```
 
 
----					 
+---
 # Соберём всё вместе в единый скрипт:
 
 [Командный файл script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py)
@@ -509,11 +509,65 @@ python script1.py
 					 
 [Скрипт script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py)
 
-```bash
+``bash
 script2.py input=elevation output=elev_2m test_map=test \
 	zcolumn=value smooth_step=20 tension_step=20 smooth_max=100 tension_max=200
 
 ```
+
+---
+# Запуск скрипта без запуска GRASS
+
+Нужно задать переменные:
+* GISBASE путь к каталогу, в котором установлена ГИС GRASS. 
+  Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE;
+* PATH системная переменная окружения $PATH, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS. 
+* PYTHONLIB путь к интерпретатору Python.
+* PYTHONPATH эта переменная должна указывать на %GISBASE%\etc\python. 
+
+Реализация:
+```python
+import os
+import sys
+gisbase = os.environ['GISBASE'] = "/usr/lib/grass70"
+gisdbase = os.path.join(os.environ['HOME'], "grassdata")
+location = "gisconf"
+mapset   = "PERMANENT"
+sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
+
+import grass.script as grass
+import grass.script.setup as gsetup
+gsetup.init(gisbase, gisdbase, location, mapset)
+print grass.gisenv()
+```
+
+---
+# Скрипт: часть 2
+
+Создадим скрипт отмывки рельефа, который:
+
+* Принимает на вход высоту источника освещения.
+* Строит растры с отмывкой рельефа, при условии что источник освещения вращается вокруг сцены на 360 градусов.
+* Для ускорения процедуры запустим скрипт в несколько паралелльных потоков.
+
+Параллелизацию мы сделаем на уровне системы:
+ * Скрипт будет запускаться как отдельная прогамма.
+ * Скрипт будет принимать на вход название временного MAPSET, в котором он будет производить вычисления.
+ * Создавать временный MAPSET.
+ * Выполнять отмывку рельефа.
+ * Копировать результаты в PERMANENT;
+ * Удалять временный MAPSET
+
+---
+
+[Командный файл script3.py](https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script3.py)
+
+Запускаем скрипт в терминале:
+
+python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node1 30
+
+python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
+
 
     </textarea>
     <!-- <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js"> -->
