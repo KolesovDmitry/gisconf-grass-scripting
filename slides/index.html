@@ -357,7 +357,7 @@ v.surf.rst -c input=name [zcolumn=name] elevation=name aspect=name where=sql_que
 * input=name &#x2192; название входной векторной карты с высотами;
 * zcolumn=name &#x2192; название столбца, в котором хранятся высоты;
 * elevation=name &#x2192; название выходной растровой карты с высотами;
-* where=sql_query &#x2192; SQL-запрос для выборки точек, учасствующих в расчетах.
+* и другие…
 
 Пример запуска:
 ```bash
@@ -390,6 +390,8 @@ v.surf.rst elev_points elev=elev_2m zcol=value
 ---
 # Подготовка данных
 
+**Вставлять команды в командную консоль wxGUI нужно по одной!**
+
 1. Разобьём точки на обучающее и тестовое множество.
 ```bash
 g.copy vector=elev_points@PERMANENT,elevation
@@ -401,6 +403,7 @@ v.edit map=elevation tool=delete where="part=10"
 
 2. Построим рельеф и считаем с него данные
 ```bash
+g.region vector=elev_points res=2
 v.surf.rst input=elev_points elev=elev_2m zcol=value smooth=10 tension=0.1 --o
 v.what.rast map=test raster=elev_2m column=elev
 ```
@@ -464,23 +467,52 @@ get_error(input_map, 'value', test_map, smooth, tension)
 # Скрипт 1: функции
 Создадим функцию "*optimize*", которая находит оптимальный набор параметров для *v.surf.rst*. Она будет получать на вход шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию "*get_error*".
 
+```python
+def optimize(input_map, zcol, test_map, smooth_step,
+            tension_step, smooth_max=100, tension_max=200):
+    opt = 10000000
+    tens = sm = None
+    s = t = 0
+    while s< smooth_max:
+        while t < tension_max:
+            err = get_error(input_map, zcol, test_map, s, t)
+            err = float(err['mean_abs'])
+            if err < opt:
+                opt = err
+                tens = t
+                sm = s
+            t = t + tension_step
+        s = s + smooth_step
+    return sm, tens
+```
+
+Выполним в консоли Python:
+
+```python
+optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
+
+```
+
+
 
 ---
 # Скрипт 1: сборка
+
+[Скачать script1.py](https://raw.githubusercontent.com/KolesovDmitry/gisconf-grass-scripting/gh-pages/script1.py)
+
 * Соберём функции "*get_error*" и "*optimize*" в единый скрипт.
 
 <!-- [script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py) -->
 
-[Скачать script1.py](https://raw.githubusercontent.com/KolesovDmitry/gisconf-grass-scripting/gh-pages/script1.py)
-
-* Запуск скрипта:
-  * в командной строке: "*python script1.py*"
+* Варианты запуска скрипта:
+  * в командной строке (терминале): "*python script1.py*"
 
   * в командной консоли wxGUI: "*python script1.py*"
 
   * из Python-консоли: "*execfile ('полный/путь/к/файлу/script1.py')* — НЕ РАБОТАЕТ ??"
 
-  * из меню wxGUI: "*File* &#x2192; *Launch script*"
+  * из меню wxGUI: "*File* &#x2192; *Launch script*".
+На вопрос, добавлять ли каталог скрипта в переменную GRASS_ADDON_PATH, ответьте "ДА".
 
 * На выходе получим растр рельефа , построенный с оптимальным набором параметров для модуля *v.surf.rst*. Все промежуточные данные будут автоматически удалены.
 
@@ -491,17 +523,39 @@ get_error(input_map, 'value', test_map, smooth, tension)
 
 [Скачать script2.py](https://raw.githubusercontent.com/KolesovDmitry/gisconf-grass-scripting/gh-pages/script1.py)
 
-Оформим 
+* Превратим "*script1.py*" в полноценный модуль GRASS.
+* Для этого нужно будет в «шапке» прописать параметры [парсера](https://grass.osgeo.org/grass70/manuals/g.parser.html) командной строки:
 
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#%Module
+#% description: Пример скрипта
+#% overwrite: yes
+#%End
+#%option
+#% key: input
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% label: Название входной карты
+#% gisprompt: old,vector,vector
+#%end
+...
+...
+```
+* После этого GRASS сможет распознавать параметры/опции скрипта и запускать его через GUI. 
 
 
 
 ---
 # Запуск «внешнего» скрипта
 
-* Работа «внешних» скриптов зависит от ОС
+* Работа «внешних» скриптов зависит от ОС — системные пути и прочее. Примеры: [1](https://grasswiki.osgeo.org/wiki/Working_with_GRASS_without_starting_it_explicitly#Python_examples), [2](http://gis-lab.info/qa/grass-external-scripting.html).
 
-* Нужно задать переменные:
+* Нужно задать переменные окружения:
 
   * **GISBASE** — путь к каталогу, в котором установлена GRASS.
 
@@ -517,20 +571,39 @@ get_error(input_map, 'value', test_map, smooth, tension)
 # Запуск «внешнего» скрипта
 
 Реализация (Windows):
+
 ```python
 import os
 import sys
-gisbase = os.environ['GISBASE'] = "/usr/lib/grass70"
-gisdbase = os.path.join(os.environ['HOME'], "grassdata")
-location = "gisconf"
-mapset   = "PERMANENT"
-sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
+import subprocess
 
-import grass.script as grass
+grass7bin = r'C:\GRASS_GIS_7.0.0\grass70.bat'
+
+# Зададим переменную GISBASE
+gisbase = os.environ['GISBASE'] = r'C:\GRASS_GIS_7.0.0'
+os.environ['PATH'] += os.pathsep + os.path.join(gisbase, 'extrabin')
+
+# Set GISDBASE environment variable
+gisdb = os.environ['GISDBASE'] = os.path.join('E:/', 'grassdata')
+location = 'demolocation'
+mapset = 'PERMANENT'
+
+# define GRASS-Python environment
+gpydir = os.path.join(gisbase, 'etc', 'python')
+sys.path.append(gpydir)
+
+# import GRASS Python bindings
+import grass.script as gscript
 import grass.script.setup as gsetup
-gsetup.init(gisbase, gisdbase, location, mapset)
+
+# launch session
+gsetup.init(gisbase, gisdb, location, mapset)
 print grass.gisenv()
+
 ```
+			 
+---
+# Запуск «внешнего» скрипта
 
 Реализация (Linux):
 ```python
@@ -553,19 +626,29 @@ print grass.gisenv()
 ---
 # Скрипт 3
 
-Создадим скрипт отмывки рельефа, который:
+Создадим «внешний» скрипт, который будет использовать созданный нами ранее растр рельефа (название??) и создавать серию растров светотеневой «отмывки» рельефа в зависимости от разных её параметров (*высота источника освещения* и *азимут*). 
 
+Устройство скрипта:
 * Принимает на вход высоту источника освещения.
-* Строит растры с отмывкой рельефа, при условии что источник освещения вращается вокруг сцены на 360 градусов.
+* Строит растры отмывки рельефа (модуль [r.relief] (https://grass.osgeo.org/grass70/manuals/r.relief.html)) при условии, что источник освещения вращается вокруг сцены на 360 градусов.
+* С помощью модуля [r.shade](https://grass.osgeo.org/grass70/manuals/r.shade.html) получаем цветные растры рельефа с «отмывкой».
+
 * Для ускорения процедуры запустим скрипт в несколько паралелльных потоков.
 
-Параллелизацию мы сделаем на уровне системы:
+
+---
+# Параллелизация
+
+В GRASS можно делать [параллелизацию]() несколькими путями
+
+Мы сделаем на уровне системы:
+
  * Скрипт будет запускаться как отдельная прогамма.
- * Скрипт будет принимать на вход название временного MAPSET, в котором он будет производить вычисления.
+ * Скрипт будет принимать на вход название временного набора (MAPSET), в котором он будет производить вычисления.
  * Создавать временный MAPSET.
- * Выполнять отмывку рельефа.
- * Копировать результаты в PERMANENT;
- * Удалять временный MAPSET
+ * Получать растры «отмывки» и цветные растры рельефа.
+ * Копировать результаты в набор PERMANENT.
+ * Удалять временный MAPSET.
 
 ---
 #
@@ -582,119 +665,23 @@ python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
 
 
 ---
-# Анимация рельефа
+# Визуализация результатов скрипта 3
+
+* Сделаем анимацию по серии растров цветного рельефа средствами GRASS [g.gui.animation](https://grass.osgeo.org/grass70/manuals/g.gui.animation.html)
+
+* Запустим из меню wxGUI: "*File* &#x2192; *Animation tool*".
+
+
+---
+# Альтернативные модули для параллелизации
 
 
 
-<!-- --- -->
-<!-- # Скрипт 1 -->
-<!-- Создадим функцию, которая находит оптимальный набор параметров для *v.surf.rst*. Она будет получать на вход шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию *get_error*. -->
+[мануал](https://grass.osgeo.org/grass70/manuals/addons/g.cloud.html)
+[презентация](http://grass-italia.como.polimi.it/meeting2012/19delucchi.pdf)
 
-<!-- ```python -->
-<!-- def optimize(input_map, zcol, test_map, smooth_step, -->
-<!--             tension_step, smooth_max=100, tension_max=200): -->
-<!--     opt = 10000000  # Большое число -->
-<!--     tens = sm = None -->
-<!--     s = t = 0 -->
-<!--     while s< smooth_max: -->
-<!--         while t < tension_max: -->
-<!--             err = get_error(input_map, zcol, test_map, s, t) -->
-<!--             err = float(err['mean_abs']) -->
-<!--             if err < opt: -->
-<!--                 opt = err -->
-<!--                 tens = t -->
-<!--                 sm = s -->
-<!--             t = t + tension_step -->
-<!--         s = s + smooth_step -->
-<!--     return sm, tens -->
-<!-- ``` -->
-
-<!-- Выполним в консоли Python: -->
-
-<!-- ```python					  -->
-<!-- optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30) -->
-
-<!-- ``` -->
-
-
-
-<!-- --- -->
-<!-- # Скрипт 1 -->
-<!-- Соберём функции *get_error* и *optimize* в единый скрипт -->
-
-<!-- [Командный файл script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py) -->
-
-<!-- Запускаем скрипт в Command Console: -->
-
-<!-- python script1.py -->
-
-<!-- Запустить скрипт можно из меню wxGUI: *File* &#x2192; *Launch script* -->
-
-<!-- Или из Python-консоли: execfile ('полный/путь/к/файлу/script1.py') — НЕ РАБОТАЕТ У МЕНЯ (??)					  -->
-
-<!-- --- -->
-<!-- # Скрипт 2 -->
-					 
-<!-- [Скрипт script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py -->
-
-<!-- --- -->
-<!-- # Запуск скрипта без запуска GRASS -->
-
-<!-- Нужно задать переменные: -->
-<!-- * GISBASE путь к каталогу, в котором установлена ГИС GRASS.  -->
-<!--   Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE; -->
-<!-- * PATH системная переменная окружения $PATH, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS.  -->
-<!-- * PYTHONLIB путь к интерпретатору Python. -->
-<!-- * PYTHONPATH эта переменная должна указывать на %GISBASE%\etc\python.  -->
-
-<!-- Реализация: -->
-<!-- ```python -->
-<!-- import os -->
-<!-- import sys -->
-<!-- gisbase = os.environ['GISBASE'] = "/usr/lib/grass70" -->
-<!-- gisdbase = os.path.join(os.environ['HOME'], "grassdata") -->
-<!-- location = "gisconf" -->
-<!-- mapset   = "PERMANENT" -->
-<!-- sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python")) -->
-
-<!-- import grass.script as grass -->
-<!-- import grass.script.setup as gsetup -->
-<!-- gsetup.init(gisbase, gisdbase, location, mapset) -->
-<!-- print grass.gisenv() -->
-<!-- ``` -->
-
-<!-- --- -->
-<!-- # Скрипт: часть 2 -->
-
-<!-- Создадим скрипт отмывки рельефа, который: -->
-
-<!-- * Принимает на вход высоту источника освещения. -->
-<!-- * Строит растры с отмывкой рельефа, при условии что источник освещения вращается вокруг сцены на 360 градусов. -->
-<!-- * Для ускорения процедуры запустим скрипт в несколько паралелльных потоков. -->
-
-<!-- Параллелизацию мы сделаем на уровне системы: -->
-<!--  * Скрипт будет запускаться как отдельная прогамма. -->
-<!--  * Скрипт будет принимать на вход название временного MAPSET, в котором он будет производить вычисления. -->
-<!--  * Создавать временный MAPSET. -->
-<!--  * Выполнять отмывку рельефа. -->
-<!--  * Копировать результаты в PERMANENT; -->
-<!--  * Удалять временный MAPSET -->
-
-<!-- --- -->
-<!-- # -->
-
-<!-- [Командный файл script3.py](https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script3.py) -->
-
-<!-- Запускаем скрипт в терминале: -->
-
-<!-- python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node1 30 -->
-
-<!-- python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60 -->
-
-
-<!-- --- -->
-<!-- # Анимация рельефа -->
-
+* «Savanna» — серия модулей для  sun gridengine ("SGE") 
+https://svn.osgeo.org/grass/grass-addons/tools/savanna/
 
 
     </textarea>
@@ -711,7 +698,7 @@ python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
           tex2jax: {
           skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
           }
-      });
+    });
     </script>
   </body>
 </html>
