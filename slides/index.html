@@ -182,7 +182,7 @@ g.region -help
 ```python
 import grass.script as grass
 ```
-После этого будут доступны следующие функции (на самом деле их больше):
+После этого будут доступны следующие функции (на самом деле, их больше):
 
 |                 | 
 |-----------------|---------------------|
@@ -347,7 +347,7 @@ grass.write_command('v.in.ascii', input='-', output='pts',
 ---
 # Интерполяция сплайнами 
 
-Метод сплайнов (модуль v.surf.rst, «*Regularized Spline with Tension*») моделирует поведение гибкой растяжимой пластины, которая закрепляется между точками. 
+Метод сплайнов (модуль [v.surf.rst](https://grass.osgeo.org/grass70/manuals/v.surf.rst.html), «*Regularized Spline with Tension*») моделирует поведение гибкой растяжимой пластины, которая закрепляется между точками. 
 
 ```bash
 v.surf.rst -c input=name [zcolumn=name] elevation=name aspect=name where=sql_query \
@@ -388,7 +388,7 @@ v.surf.rst elev_points elev=elev_2m zcol=value
 **Замечание** Процедура перекрестной проверки уже встроена в модуль, но мы воспроизведём ее в учебных целях.
 
 ---
-# Подготовка данных для расчетов
+# Подготовка данных
 
 1. Разобьём точки на обучающее и тестовое множество.
 ```bash
@@ -412,7 +412,7 @@ v.univar map=test column=error
 ```
 
 ---
-# Скрипт: часть 1
+# Скрипт 1: функции
 Последовательность построения рельефа и расчет погрешности оформим в виде функции на Python:
 
 ```python
@@ -435,7 +435,7 @@ def get_error(input_map, zcol, test_map, smooth, tension):
 ```
 
 ---
-# Скрипт: часть 1
+# Скрипт 1: функции
 
 В консоли Python выполним:
 ```python
@@ -461,71 +461,62 @@ get_error(input_map, 'value', test_map, smooth, tension)
 ```
 
 ---
-# Скрипт: часть 1
-Создадим функцию, которая находит оптимальный набор параметров. Она будет получать на вход
-шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию get_error.
-
-```python
-def optimize(input_map, zcol, test_map, smooth_step,
-            tension_step, smooth_max=100, tension_max=200):
-    opt = 10000000  # Большое число
-    tens = sm = None
-    s = t = 0
-    while s< smooth_max:
-        while t < tension_max:
-            err = get_error(input_map, zcol, test_map, s, t)
-            err = float(err['mean_abs'])
-            if err < opt:
-                opt = err
-                tens = t
-                sm = s
-            t = t + tension_step
-        s = s + smooth_step
-    return sm, tens
-```
-
-Выполним в консоли Python:
-
-```python					 
-optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
-```
+# Скрипт 1: функции
+Создадим функцию "*optimize*", которая находит оптимальный набор параметров для *v.surf.rst*. Она будет получать на вход шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию "*get_error*".
 
 
 ---
-# Соберём всё вместе в единый скрипт:
+# Скрипт 1: сборка
+* Соберём функции "*get_error*" и "*optimize*" в единый скрипт.
 
-[Командный файл script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py)
+<!-- [script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py) -->
 
-Запускаем скрипт в Command Console:
+[Скачать script1.py](https://raw.githubusercontent.com/KolesovDmitry/gisconf-grass-scripting/gh-pages/script1.py)
 
-python script1.py
+* Запуск скрипта:
+  * в командной строке: "*python script1.py*"
 
-Запустить скрипт можно из меню wxGUI: *File* &#x2192; *Launch script*
+  * в командной консоли wxGUI: "*python script1.py*"
 
-Или из Python-консоли: execfile ('полный/путь/к/файлу/script1.py') — НЕ РАБОТАЕТ У МЕНЯ (??)					 
+  * из Python-консоли: "*execfile ('полный/путь/к/файлу/script1.py')* — НЕ РАБОТАЕТ ??"
 
----
-#
-					 
-[Скрипт script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py)
+  * из меню wxGUI: "*File* &#x2192; *Launch script*"
 
-``bash
-script2.py input=elevation output=elev_2m test_map=test \
-	zcolumn=value smooth_step=20 tension_step=20 smooth_max=100 tension_max=200
-
-```
+* На выходе получим растр рельефа , построенный с оптимальным набором параметров для модуля *v.surf.rst*. Все промежуточные данные будут автоматически удалены.
 
 ---
-# Запуск скрипта без запуска GRASS
+# Скрипт 2: модуль
 
-Нужно задать переменные:
-* GISBASE путь к каталогу, в котором установлена ГИС GRASS. 
-  Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE;
-* PATH системная переменная окружения $PATH, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS. 
-* PYTHONLIB путь к интерпретатору Python.
-* PYTHONPATH эта переменная должна указывать на %GISBASE%\etc\python. 
+<!-- [script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py ) -->
 
-Реализация:
+[Скачать script2.py](https://raw.githubusercontent.com/KolesovDmitry/gisconf-grass-scripting/gh-pages/script1.py)
+
+Оформим 
+
+
+
+
+---
+# Запуск «внешнего» скрипта
+
+* Работа «внешних» скриптов зависит от ОС
+
+* Нужно задать переменные:
+
+  * **GISBASE** — путь к каталогу, в котором установлена GRASS.
+
+  Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE; (а как в Винде?????)
+
+  * **PATH** — системная переменная окружения, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS.
+
+  * **PYTHONLIB** — путь к интерпретатору Python.
+
+  * **PYTHONPATH** — переменная должна указывать на %GISBASE%\etc\python.
+
+---
+# Запуск «внешнего» скрипта
+
+Реализация (Windows):
 ```python
 import os
 import sys
@@ -541,8 +532,26 @@ gsetup.init(gisbase, gisdbase, location, mapset)
 print grass.gisenv()
 ```
 
+Реализация (Linux):
+```python
+import os
+import sys
+gisbase = os.environ['GISBASE'] = "/usr/lib/grass70"
+gisdbase = os.path.join(os.environ['HOME'], "grassdata")
+location = "gisconf"
+mapset   = "PERMANENT"
+sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
+
+import grass.script as grass
+import grass.script.setup as gsetup
+gsetup.init(gisbase, gisdbase, location, mapset)
+print grass.gisenv()
+```
+
+
+
 ---
-# Скрипт: часть 2
+# Скрипт 3
 
 Создадим скрипт отмывки рельефа, который:
 
@@ -559,14 +568,133 @@ print grass.gisenv()
  * Удалять временный MAPSET
 
 ---
+#
 
-[Командный файл script3.py](https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script3.py)
+[Скачать script3.py](https://raw.githubusercontent.com/KolesovDmitry/gisconf-grass-scripting/gh-pages/script3.py)
+
+<!-- [script3.py](https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script3.py) -->
 
 Запускаем скрипт в терминале:
 
 python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node1 30
 
 python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
+
+
+---
+# Анимация рельефа
+
+
+
+<!-- --- -->
+<!-- # Скрипт 1 -->
+<!-- Создадим функцию, которая находит оптимальный набор параметров для *v.surf.rst*. Она будет получать на вход шаг изменения параметров и "пробегать" параметры с заданным шагом, вызывая функцию *get_error*. -->
+
+<!-- ```python -->
+<!-- def optimize(input_map, zcol, test_map, smooth_step, -->
+<!--             tension_step, smooth_max=100, tension_max=200): -->
+<!--     opt = 10000000  # Большое число -->
+<!--     tens = sm = None -->
+<!--     s = t = 0 -->
+<!--     while s< smooth_max: -->
+<!--         while t < tension_max: -->
+<!--             err = get_error(input_map, zcol, test_map, s, t) -->
+<!--             err = float(err['mean_abs']) -->
+<!--             if err < opt: -->
+<!--                 opt = err -->
+<!--                 tens = t -->
+<!--                 sm = s -->
+<!--             t = t + tension_step -->
+<!--         s = s + smooth_step -->
+<!--     return sm, tens -->
+<!-- ``` -->
+
+<!-- Выполним в консоли Python: -->
+
+<!-- ```python					  -->
+<!-- optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30) -->
+
+<!-- ``` -->
+
+
+
+<!-- --- -->
+<!-- # Скрипт 1 -->
+<!-- Соберём функции *get_error* и *optimize* в единый скрипт -->
+
+<!-- [Командный файл script1.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script1.py) -->
+
+<!-- Запускаем скрипт в Command Console: -->
+
+<!-- python script1.py -->
+
+<!-- Запустить скрипт можно из меню wxGUI: *File* &#x2192; *Launch script* -->
+
+<!-- Или из Python-консоли: execfile ('полный/путь/к/файлу/script1.py') — НЕ РАБОТАЕТ У МЕНЯ (??)					  -->
+
+<!-- --- -->
+<!-- # Скрипт 2 -->
+					 
+<!-- [Скрипт script2.py]( https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script2.py -->
+
+<!-- --- -->
+<!-- # Запуск скрипта без запуска GRASS -->
+
+<!-- Нужно задать переменные: -->
+<!-- * GISBASE путь к каталогу, в котором установлена ГИС GRASS.  -->
+<!--   Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE; -->
+<!-- * PATH системная переменная окружения $PATH, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS.  -->
+<!-- * PYTHONLIB путь к интерпретатору Python. -->
+<!-- * PYTHONPATH эта переменная должна указывать на %GISBASE%\etc\python.  -->
+
+<!-- Реализация: -->
+<!-- ```python -->
+<!-- import os -->
+<!-- import sys -->
+<!-- gisbase = os.environ['GISBASE'] = "/usr/lib/grass70" -->
+<!-- gisdbase = os.path.join(os.environ['HOME'], "grassdata") -->
+<!-- location = "gisconf" -->
+<!-- mapset   = "PERMANENT" -->
+<!-- sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python")) -->
+
+<!-- import grass.script as grass -->
+<!-- import grass.script.setup as gsetup -->
+<!-- gsetup.init(gisbase, gisdbase, location, mapset) -->
+<!-- print grass.gisenv() -->
+<!-- ``` -->
+
+<!-- --- -->
+<!-- # Скрипт: часть 2 -->
+
+<!-- Создадим скрипт отмывки рельефа, который: -->
+
+<!-- * Принимает на вход высоту источника освещения. -->
+<!-- * Строит растры с отмывкой рельефа, при условии что источник освещения вращается вокруг сцены на 360 градусов. -->
+<!-- * Для ускорения процедуры запустим скрипт в несколько паралелльных потоков. -->
+
+<!-- Параллелизацию мы сделаем на уровне системы: -->
+<!--  * Скрипт будет запускаться как отдельная прогамма. -->
+<!--  * Скрипт будет принимать на вход название временного MAPSET, в котором он будет производить вычисления. -->
+<!--  * Создавать временный MAPSET. -->
+<!--  * Выполнять отмывку рельефа. -->
+<!--  * Копировать результаты в PERMANENT; -->
+<!--  * Удалять временный MAPSET -->
+
+<!-- --- -->
+<!-- # -->
+
+<!-- [Командный файл script3.py](https://github.com/KolesovDmitry/gisconf-grass-scripting/blob/gh-pages/script3.py) -->
+
+<!-- Запускаем скрипт в терминале: -->
+
+<!-- python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node1 30 -->
+
+<!-- python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60 -->
+
+
+<!-- --- -->
+<!-- # Анимация рельефа -->
+
 
 
     </textarea>
