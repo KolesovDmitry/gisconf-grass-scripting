@@ -509,8 +509,6 @@ optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
 
   * в командной консоли wxGUI: "*python script1.py*"
 
-  * из Python-консоли: "*execfile ('полный/путь/к/файлу/script1.py')* — НЕ РАБОТАЕТ ??"
-
   * из меню wxGUI: "*File* &#x2192; *Launch script*".
 На вопрос, добавлять ли каталог скрипта в переменную GRASS_ADDON_PATH, ответьте "ДА".
 
@@ -575,7 +573,6 @@ optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
 ```python
 import os
 import sys
-import subprocess
 
 grass7bin = r'C:\GRASS_GIS_7.0.0\grass70.bat'
 
@@ -639,11 +636,22 @@ print grass.gisenv()
 ---
 # Параллелизация
 
-В GRASS можно делать [параллелизацию]() несколькими путями
+В GRASS можно делать [параллелизацию](https://grasswiki.osgeo.org/wiki/Parallel_GRASS_jobs) несколькими путями:
+- параллелим области
+- параллелим наборы
+- программно (OpenMPI и прочее)
 
-Мы сделаем на уровне системы:
+* Примеры существующих реализаций
 
- * Скрипт будет запускаться как отдельная прогамма.
+ * [g.cloud](https://grass.osgeo.org/grass70/manuals/addons/g.cloud.html) [презентация](http://grass-italia.como.polimi.it/meeting2012/19delucchi.pdf)
+
+ * [Savanna](https://svn.osgeo.org/grass/grass-addons/tools/savanna/) — серия модулей для [Sun Grid Engine](https://ru.wikipedia.org/wiki/Sun_Grid_Engine) ("SGE") 
+
+
+---
+# Мы сделаем на уровне системы:
+
+ * Скрипт будет запускаться как отдельная программа.
  * Скрипт будет принимать на вход название временного набора (MAPSET), в котором он будет производить вычисления.
  * Создавать временный MAPSET.
  * Получать растры «отмывки» и цветные растры рельефа.
@@ -663,6 +671,7 @@ python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node1 30
 
 python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
 
+пометка: делаем 2 примера для винды и линукса отдельно
 
 ---
 # Визуализация результатов скрипта 3
@@ -671,17 +680,9 @@ python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
 
 * Запустим из меню wxGUI: "*File* &#x2192; *Animation tool*".
 
-
 ---
-# Альтернативные модули для параллелизации
+# Спасибо за внимание!
 
-
-
-[мануал](https://grass.osgeo.org/grass70/manuals/addons/g.cloud.html)
-[презентация](http://grass-italia.como.polimi.it/meeting2012/19delucchi.pdf)
-
-* «Savanna» — серия модулей для  sun gridengine ("SGE") 
-https://svn.osgeo.org/grass/grass-addons/tools/savanna/
 
 
     </textarea>
