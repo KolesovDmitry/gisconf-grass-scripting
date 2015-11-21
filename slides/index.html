@@ -74,18 +74,24 @@ class: center, middle
 
 * Модули («команды»)
 
-* Простая циклическая обработка
+* Варианты автоматизации задач 
 
-* Последовательность команд == скрипт
+* Основные функции вызова команд в Python 
 
-* Создание модулей
+* Тестовая задача
+
+* Скрипт
+
+* Модуль
+
+* Внешний скрипт
 
 * Параллелизация
 
 
 ---
 # Устройство GRASS: общие сведения
-* Модульная структура (более 300 модулей)
+* Модульная структура (более 500 модулей)
 
 * Модуль — отдельная программа (или скрипт), использующий библиотеки GRASS
 
@@ -105,7 +111,7 @@ class: center, middle
 
 ---
 # Устройство GRASS: БД, область, набор
-.center[<img src="img/help_loc_struct.png" width=500  />]
+.center[<img src="img/help_loc_struct.png" width=450  />]
 * Строгая иерархия данных:
 
   * «База данных» (GISDBASE / database) — не настоящая БД, а набор директорий и файлов. 
@@ -542,7 +548,6 @@ optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
 #% gisprompt: old,vector,vector
 #%end
 ...
-...
 ```
 * После этого GRASS сможет распознавать параметры/опции скрипта и запускать его через GUI. 
 
@@ -560,6 +565,8 @@ optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
   Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE; (а как в Винде?????)
 
   * **PATH** — системная переменная окружения, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS.
+
+* Задать переменные окружения или определить внутри скрипта:
 
   * **PYTHONLIB** — путь к интерпретатору Python.
 
@@ -647,6 +654,7 @@ print grass.gisenv()
 
  * [Savanna](https://svn.osgeo.org/grass/grass-addons/tools/savanna/) — серия модулей для [Sun Grid Engine](https://ru.wikipedia.org/wiki/Sun_Grid_Engine) ("SGE") 
 
+ * [GNU Parallel](http://www.gnu.org/software/parallel/) -- утилита для запуска параллельных вычислений на одном или нескольких компьютерах.
 
 ---
 # Мы сделаем на уровне системы:
@@ -677,10 +685,23 @@ python script3.py /usr/lib/grass70 ~/GIS/GRASSDATA7 gisconf node2 60
 # Визуализация результатов скрипта 3
 
 * Сделаем анимацию по серии растров цветного рельефа средствами GRASS [g.gui.animation](https://grass.osgeo.org/grass70/manuals/g.gui.animation.html)
-
 * Запустим из меню wxGUI: "*File* &#x2192; *Animation tool*".
+* Добавим растры для анимации.
+* При желании можно экспортировать в различные форматы.
+.center[<img src="img/g.gui.animation.png" width=400  />]
 
+```bash
+g.gui.animation raster=elev_sh_col_0,elev_sh_col_20,elev_sh_col_40,elev_sh_col_60,\
+	elev_sh_col_80,elev_sh_col_100,elev_sh_col_120, elev_sh_col_140,elev_sh_col_160,\
+	elev_sh_col_180,elev_sh_col_20,elev_sh_col_200,elev_sh_col_220,elev_sh_col_240,elev_sh_col_260,
+	elev_sh_col_280,elev_sh_col_300,elev_sh_col_320,elev_sh_col_340
+```
 ---
+# Результат
+.center[<img src="img/elev.gif" width=700  />]
+---
+class: center, middle
+
 # Спасибо за внимание!
 
 
