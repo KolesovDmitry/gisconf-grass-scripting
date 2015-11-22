@@ -9,7 +9,7 @@ def main(grassdata, location, mapset, altitude):
     # Создаем временный Mapset
     grass.run_command('g.mapset', mapset=mapset, flags='c')
 
-    # Копируем туда файлыё
+    # Копируем туда файлы
     grass.run_command('g.copy', raster='elev_2m@user1,elev_2m')
     grass.run_command('g.region', raster='elev_2m')
 
