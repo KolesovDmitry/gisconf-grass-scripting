@@ -475,7 +475,7 @@ get_error(input_map, 'value', test_map, smooth, tension)
 
 ```python
 def optimize(input_map, zcol, test_map, smooth_step,
-            tension_step, smooth_max=100, tension_max=200):
+            tension_step, smooth_max=10, tension_max=100):
     opt = 10000000
     tens = sm = None
     s = t = 0
@@ -495,7 +495,7 @@ def optimize(input_map, zcol, test_map, smooth_step,
 Выполним в консоли Python:
 
 ```python
-optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
+optimize(input_map, 'value', test_map, smooth_step=2, tension_step=20)
 
 ```
 

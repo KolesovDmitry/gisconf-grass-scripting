@@ -67,7 +67,7 @@
 #% multiple: no
 #% description: Smooth max value
 #% guisection: Parameters
-#% answer: 200
+#% answer: 10
 #%end
 #%option
 #% key: tension_max
@@ -102,7 +102,7 @@ def get_error(input_map, zcol, test_map, smooth, tension):
 
 
 def optimize(input_map, zcol, test_map, smooth_step,
-            tension_step, smooth_max=100, tension_max=200):
+            tension_step, smooth_max=10, tension_max=100):
     opt = 10000000  #
     tens = sm = None
     s = t = 0
