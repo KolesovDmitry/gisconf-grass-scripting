@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #%Module
-#% description: Пример скрипта
+#% description: Module example
 #% overwrite: yes
 #%End
 #%option
@@ -11,7 +11,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% label: Название входной карты
+#% label: Input map
 #% gisprompt: old,vector,vector
 #%end
 #%option
@@ -20,7 +20,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% label: Название колонки, в которой хранятся данные высот
+#% label: Field with heights
 #% gisprompt: old,dbcolumn,dbcolumn
 #% guisection: Parameters
 #%end
@@ -30,7 +30,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% description: Название выходной карты высот
+#% description: Output map
 #% gisprompt: new,cell,raster
 #% guisection: Outputs
 #%end
@@ -40,7 +40,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% label: Название векторной карты с тестовой выборкой
+#% label: Test input map
 #% gisprompt: old,vector,vector
 #% guisection: Parameters
 #%end
@@ -49,7 +49,7 @@
 #% type: double
 #% required: yes
 #% multiple: no
-#% description: Шаг изменения smooth
+#% description: Smooth step
 #% guisection: Parameters
 #%end
 #%option
@@ -57,7 +57,7 @@
 #% type: double
 #% required: yes
 #% multiple: no
-#% description: Шаг изменения Tension
+#% description: Tension step
 #% guisection: Parameters
 #%end
 #%option
@@ -65,25 +65,28 @@
 #% type: double
 #% required: yes
 #% multiple: no
-#% description: Максимально допустимое значение  Smooth
+#% description: Smooth max value
 #% guisection: Parameters
+#% answer: 200
 #%end
 #%option
 #% key: tension_max
 #% type: double
 #% required: yes
 #% multiple: no
-#% description: Максимально допустимое значение Tension
+#% description: Tension max value
 #% guisection: Parameters
+#% answer: 100
 #%end
 
 
-import grass.script as grass
-
 import uuid
+
+import grass.script as grass
 
 def get_error(input_map, zcol, test_map, smooth, tension):
     output_map = uuid.uuid4().hex
+    grass.run_command('g.region', vect=input_map)
     grass.run_command('v.surf.rst', input=input_map, elev=output_map,
         zcol=zcol, smooth=smooth, tension=tension,
         segmax=30, npmin=140, overwrite=True)

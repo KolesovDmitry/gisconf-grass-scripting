@@ -170,9 +170,9 @@ g.region -help
 
   * Начиная с версии GRASS 7 все скрипты переписаны на Python и рекомендуется использовать именно его 
 
-* **Внутренние** скрипты (исполняемые внутри интерактивной сессии GRASS)
+* **Внутренние** скрипты (исполняемые внутри ИНТЕРАКТИВНОЙ сессии GRASS)
 
-* **Внешние** (исполняемые вне сессии). Для их запуска необходимо задать специфические *переменные окружения* (GISBASE, GISDBASE, LOCATION_NAME, MAPSET).
+* **Внешние** (исполняемые вне ИНТЕРАКТИВНОЙ сессии). Для их запуска необходимо задать специфические *переменные окружения* (GISBASE, GISDBASE, LOCATION_NAME, MAPSET).
 
 * wxGUI включает также *Graphical Modeller*, но это не наша тема
 
@@ -557,48 +557,50 @@ optimize(input_map, 'value', test_map, smooth_step=20, tension_step=30)
 
   * **GISBASE** — путь к каталогу, в котором установлена GRASS.
 
-  Узнать значение переменной можно, если запустить GRASS и в консоли выполнить команду: echo $GISBASE; (а как в Винде?????)
-
+* Чтобы узнать, где установлена GRASS 7:
+ * в Windows наберите в командной строке (CMD) или в командной консоли wxGUI
+```bash
+where grass70
+```
+ * в Linux наберите в командной строке (bash) или в командной консоли wxGUI
+```bash
+which grass70
+```
   * **PATH** — системная переменная окружения, в которой нужно прописать пути каталогам, в которых следует искать скрипты и команды GRASS.
 
-  * **PYTHONLIB** — путь к интерпретатору Python.
-
-  * **PYTHONPATH** — переменная должна указывать на %GISBASE%\etc\python.
 
 ---
 # Запуск «внешнего» скрипта
 
 Реализация (Windows):
-
 ```python
+# -*- coding: utf-8 -*-
 import os
 import sys
-
-grass7bin = r'C:\GRASS_GIS_7.0.0\grass70.bat'
-
-# Зададим переменную GISBASE
-gisbase = os.environ['GISBASE'] = r'C:\GRASS_GIS_7.0.0'
+## Зададим переменную окружения GISBASE ##
+## Проверяем, куда установлена GRASS (OSGeo4W или «Standalone»)? #
+# gisbase = os.environ['GISBASE'] = r'C:\OSGeo4W\apps\grass\grass-7.0.2'
+gisbase = os.environ['GISBASE'] = r'C:\\Program Files (x86)\\GRASS GIS 7.0.2'
 os.environ['PATH'] += os.pathsep + os.path.join(gisbase, 'extrabin')
-
-# Set GISDBASE environment variable
-gisdb = os.environ['GISDBASE'] = os.path.join('E:/', 'grassdata')
-location = 'demolocation'
-mapset = 'PERMANENT'
-
-# define GRASS-Python environment
+## Зададим переменную окружения GISDBASE (БД) ##
+# gisdb = os.environ['GISDBASE'] = os.path.join('E:/', 'grassdata')
+gisdb = os.environ['GISDBASE'] = os.path.join('E:/')
+location = 'gisconf_grass'
+mapset = 'user1'
+# Определим окружение GRASS-Python
 gpydir = os.path.join(gisbase, 'etc', 'python')
 sys.path.append(gpydir)
-
-# import GRASS Python bindings
-import grass.script as gscript
+# Импортируем Python-модуль GRASS 
+import grass.script as grass
 import grass.script.setup as gsetup
-
-# launch session
+# Запускаем сессию
 gsetup.init(gisbase, gisdb, location, mapset)
 print grass.gisenv()
-
 ```
-			 
+
+выполнение из Python-консоли
+<!-- execfile('E:\win_init.py') -->
+
 ---
 # Запуск «внешнего» скрипта
 
