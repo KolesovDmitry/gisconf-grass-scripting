@@ -19,13 +19,13 @@ def main(grassdata, location, mapset, altitude):
         shaded = 'elev_sh_' + str(a)
         grass.run_command('r.relief', input='elev_2m', altitude=altitude,
                           output=shaded, azimuth=a, overwrite=True)
-        shaded_color = 'elev_sh_col_' + str(a)
+        shaded_color = 'elev_sh_col_%s_%s' % (a, altitude)
         grass.run_command('r.shade', shade=shaded, color='elevation',
                           output=shaded_color, overwrite=True)
         names.append(shaded_color)
 
     # Переходим в PERMANENT, копируем результаты расчетов
-    grass.run_command('g.mapset', mapset='PERMANENT', flags='c')
+    grass.run_command('g.mapset', mapset='user1', flags='c')
     for name in names:
         name_old = name + '@' + mapset
         grass.run_command('g.copy', raster=name_old +',' + name)
