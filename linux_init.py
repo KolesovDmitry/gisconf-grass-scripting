@@ -12,7 +12,9 @@ gisdbase = os.path.join(os.environ['HOME'], "grassdata")
 location = "gisconf"
 mapset   = "PERMANENT"
 sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
+# Импортируем Python-модуль GRASS 
 import grass.script as grass
 import grass.script.setup as gsetup
+# Запускаем сессию GRASS
 gsetup.init(gisbase, gisdbase, location, mapset)
 print grass.gisenv()
